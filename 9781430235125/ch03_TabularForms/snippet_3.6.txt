@@ -1,0 +1,32 @@
+   FUNCTION validate_data_integrity  
+      RETURN VARCHAR2;
+
+   FUNCTION validate_data_integrity
+      RETURN VARCHAR2
+   IS
+      v_error   VARCHAR2 (4000);
+   BEGIN
+      FOR i IN 1 .. apex_application.g_f02.COUNT
+      LOOP
+         IF NOT compare_checksum_change (i)
+            AND NOT compare_checksum_table (i)
+         THEN
+            v_error :=
+                  v_error
+               || '<br/>'
+               || 'Row '
+               || i
+               || ': The version of the data in the '
+               || 'table has been change since the last page '
+               || 'rendering. Click <a href="f?p='
+               || v ('APP_ID')
+               || ':'
+               || v ('APP_PAGE_ID')
+               || ':'
+               || v ('APP_SESSION')
+               || '">here</a> to reload the page.';
+         END IF;
+      END LOOP;
+      v_error := LTRIM(v_error, '<br/>');
+      RETURN v_error;
+   END validate_data_integrity;

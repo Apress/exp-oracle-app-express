@@ -1,0 +1,110 @@
+CREATE OR REPLACE PACKAGE tab_form_emp_pkg
+AS
+   PROCEDURE disable_foreign_constraints;
+
+   PROCEDURE enable_foreign_constraints;
+
+   PROCEDURE restore_tables;
+
+   PROCEDURE delete_emp_row (p_message OUT VARCHAR2);
+END tab_form_emp_pkg;
+/
+
+CREATE OR REPLACE PACKAGE BODY tab_form_emp_pkg
+AS
+   PROCEDURE disable_foreign_constraints
+   IS
+   BEGIN
+      FOR c IN (SELECT   constraint_name, table_name
+                    FROM user_constraints
+                   WHERE table_name IN ('EMP', 'DEPT')
+                     AND constraint_type = 'R'
+                ORDER BY table_name)
+      LOOP
+         EXECUTE IMMEDIATE    'ALTER TABLE '
+                           || c.table_name
+                           || ' DISABLE CONSTRAINT '
+                           || c.constraint_name;
+      END LOOP;
+   END disable_foreign_constraints;
+
+   PROCEDURE enable_foreign_constraints
+   IS
+   BEGIN
+      FOR c IN (SELECT   constraint_name, table_name
+                    FROM user_constraints
+                   WHERE table_name IN ('EMP', 'DEPT')
+                     AND constraint_type = 'R'
+                ORDER BY table_name)
+      LOOP
+         EXECUTE IMMEDIATE    'ALTER TABLE '
+                           || c.table_name
+                           || ' ENABLE CONSTRAINT '
+                           || c.constraint_name;
+      END LOOP;
+   END enable_foreign_constraints;
+
+   PROCEDURE restore_tables
+   IS
+   -- We will use this process to restore our date after testing.
+   BEGIN
+      FOR c IN (SELECT   constraint_name, table_name
+                    FROM user_constraints
+                   WHERE table_name IN ('EMP', 'DEPT')
+                     AND constraint_type = 'R'
+                ORDER BY table_name)
+      LOOP
+         EXECUTE IMMEDIATE    'ALTER TABLE '
+                           || c.table_name
+                           || ' DISABLE CONSTRAINT '
+                           || c.constraint_name;
+      END LOOP;
+
+      EXECUTE IMMEDIATE 'TRUNCATE TABLE dept DROP STORAGE';
+
+      EXECUTE IMMEDIATE 'TRUNCATE TABLE emp DROP STORAGE';
+
+      INSERT INTO dept
+         SELECT *
+           FROM dept_bkp;
+
+      INSERT INTO emp
+         SELECT *
+           FROM emp_bkp;
+
+      COMMIT;
+
+      FOR c IN (SELECT   constraint_name, table_name
+                    FROM user_constraints
+                   WHERE table_name IN ('EMP', 'DEPT')
+                     AND constraint_type = 'R'
+                ORDER BY table_name)
+      LOOP
+         EXECUTE IMMEDIATE    'ALTER TABLE '
+                           || c.table_name
+                           || ' ENABLE CONSTRAINT '
+                           || c.constraint_name;
+      END LOOP;
+   END restore_tables;
+
+   PROCEDURE delete_emp_row (p_message OUT VARCHAR2)
+   IS
+      v_row     INTEGER;
+      v_count   INTEGER := 0;
+   BEGIN
+      FOR i IN 1 .. apex_application.g_f01.COUNT
+      LOOP
+         v_row := apex_application.g_f01 (i);
+
+         DELETE FROM emp
+               WHERE empno = apex_application.g_f02 (v_row);
+
+         -- g_f02 is the hidden column containing
+         -- the primary key of the EMP table (empno)
+         v_count := v_count + 1;
+      END LOOP;
+
+      p_message := v_count || ' row(s) deleted.';
+   END delete_emp_row;
+END tab_form_emp_pkg;
+/

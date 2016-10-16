@@ -1,0 +1,29 @@
+   PROCEDURE create_emp_collection (p_deptno IN NUMBER);
+   PROCEDURE create_emp_collection (p_deptno IN NUMBER)
+   IS
+      v_collection   VARCHAR2 (40) := 'EMP_DEPT';
+   BEGIN
+      IF apex_collection.collection_exists (v_collection)
+      THEN
+         apex_collection.delete_collection (v_collection);
+         p_message := 'Collection deleted.';
+      END IF;
+
+      apex_collection.create_collection_from_query
+        (v_collection,
+         'SELECT a.*,  wwv_flow_item.md5(empno, ename, job, '
+      || 'mgr, hiredate, sal, comm, deptno, valid)  '
+      || 'FROM EMP a WHERE deptno = ' 
+      || p_deptno                                     
+         );
+      p_message := p_message || '<br/>' || 'Collection created.';
+      p_message := LTRIM (p_message, '<br/>');
+   END create_emp_collection;
+
+CREATE OR REPLACE VIEW emp_coll_v
+AS
+   SELECT seq_id, c001 empno, c002 ename, c003 job, c004 mgr, c005 hiredate,
+          c006 sal, c007 comm, c008 deptno, c009 valid, c010 checksum, 
+          c011 delete_flag
+     FROM apex_collections
+    WHERE collection_name = 'EMP_DEPT';

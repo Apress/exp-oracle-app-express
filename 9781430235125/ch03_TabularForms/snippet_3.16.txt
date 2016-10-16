@@ -1,0 +1,129 @@
+   FUNCTION get_manager_for_id (p_mgr IN NUMBER)
+      RETURN VARCHAR2;
+
+   PROCEDURE get_manager;
+
+   FUNCTION get_autocomplete_key (
+      p_value        IN   VARCHAR2,
+      p_key_item     IN   VARCHAR2,
+      p_rownum       IN   VARCHAR2,
+      p_width        IN   NUMBER,
+      p_process      IN   VARCHAR2,
+      p_max_length   IN   NUMBER DEFAULT 80,
+      p_size         IN   NUMBER DEFAULT 80
+   )
+      RETURN VARCHAR2;
+
+   FUNCTION get_manager_for_id (p_mgr IN NUMBER)
+      RETURN VARCHAR2
+   IS
+      v_ename   emp.ename%TYPE;
+   BEGIN
+      FOR c IN (SELECT ename
+                  FROM emp
+                 WHERE empno = p_mgr)
+      LOOP
+         v_ename := c.ename;
+      END LOOP;
+
+      RETURN v_ename;
+   END get_manager_for_id;
+
+   PROCEDURE get_manager
+   IS
+      v_search   VARCHAR2 (255);
+      v_output   VARCHAR2 (400);
+   BEGIN
+      EXECUTE IMMEDIATE 'alter session set NLS_SORT=BINARY_CI';
+
+      EXECUTE IMMEDIATE 'alter session set NLS_COMP=LINGUISTIC';
+
+      v_search := REPLACE (wwv_flow.g_x01, '*', '%');
+
+      FOR i IN (SELECT ename, empno
+                  FROM emp
+                 WHERE ename LIKE '%' || v_search || '%'
+                 AND empno IN (SELECT mgr FROM emp))
+      LOOP
+         v_output := i.ename || '|' || i.empno;
+         HTP.p (v_output);
+      END LOOP;
+   END get_manager;
+
+   FUNCTION get_autocomplete_key (
+      p_value        IN   VARCHAR2,
+      p_key_item     IN   VARCHAR2,
+      p_rownum       IN   VARCHAR2,
+      p_width        IN   NUMBER,
+      p_process      IN   VARCHAR2,
+      p_max_length   IN   NUMBER DEFAULT 80,
+      p_size         IN   NUMBER DEFAULT 80
+   )
+      RETURN VARCHAR2
+   IS
+      v_rownum        VARCHAR2 (20);
+      v_name          VARCHAR2 (5)    := 'f50';
+      v_item          VARCHAR2 (20);
+      v_item_html     VARCHAR2 (3000);
+      v_key_item      VARCHAR2 (20);
+      v_script        VARCHAR2 (1000);
+      v_output_item   VARCHAR2 (4000);
+      a_rownum        VARCHAR2 (400);
+   BEGIN
+      v_rownum := p_rownum;
+      v_item := v_name || '_' || v_rownum;
+      v_item_html :=
+            '<input type="text" id="'
+         || v_item
+         || '" value="'
+         || p_value
+         || '" maxlength="'
+         || p_max_length
+         || '" size="'
+         || p_size
+         || '" name="'
+         || v_name
+         || '" '
+         || 'autocomplete="off" class="ac_input"'
+         || 'style="width:'
+         || p_width
+         || 'px">';
+      v_key_item := p_key_item || '_' || v_rownum;
+      v_script :=
+            '<script type="text/javascript">'
+         || '$(document).ready( function() {'
+         || '$("#'
+         || v_item
+         || '").autocomplete(''APEX'', {'
+         || 'apexProcess: '''
+         || p_process
+         || ''','
+         || 'width: '
+         || p_width
+         || ','
+         || 'multiple: false,'
+         || 'matchContains: true,'
+         || 'cacheLength: 1,'
+         || 'max: 100,'
+         || 'delay: 150,'
+         || 'minChars: 1,'
+         || 'matchSubset: false,'
+         || 'x02: ''foo'','
+         || 'x03: $(''#'
+         || v_key_item
+         || ''').val()'
+         || '});'
+         || '$("#'
+         || v_item
+         || '").result(function(event, data, formatted) {'
+         || 'if (data){'
+         || '$("#'
+         || v_key_item
+         || '").val(data[1]);'
+         || '}'
+         || '});'
+         || '});'
+         || '</script>';
+      v_output_item := v_item_html || v_script;
+      RETURN v_output_item;
+   END get_autocomplete_key;

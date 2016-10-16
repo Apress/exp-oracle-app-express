@@ -1,0 +1,66 @@
+   PROCEDURE get_job;
+   
+   FUNCTION get_autocomplete (
+      p_item      IN   VARCHAR2,
+      p_rownum    IN   VARCHAR2,
+      p_width     IN   NUMBER,
+      p_process   IN   VARCHAR2
+   )
+      RETURN VARCHAR2;
+      
+   PROCEDURE get_job
+   IS
+      v_search   emp.job%TYPE;
+   BEGIN
+      EXECUTE IMMEDIATE 'alter session set NLS_SORT=BINARY_CI';
+
+      EXECUTE IMMEDIATE 'alter session set NLS_COMP=LINGUISTIC';
+
+      v_search := REPLACE (wwv_flow.g_x01, '*', '%');
+
+      FOR i IN (SELECT DISTINCT job
+                           FROM emp
+                          WHERE job LIKE '%' || v_search || '%')
+      LOOP
+         HTP.p (i.job);
+      END LOOP;
+   END get_job;
+   
+   FUNCTION get_autocomplete (
+      p_item      IN   VARCHAR2,
+      p_rownum    IN   VARCHAR2,
+      p_width     IN   NUMBER,
+      p_process   IN   VARCHAR2
+   )
+      RETURN VARCHAR2
+   IS
+      v_rownum   VARCHAR2 (20);
+      v_item     VARCHAR2 (20);
+      v_script   VARCHAR2 (1000);
+   BEGIN
+      v_rownum := p_rownum;
+      v_item := p_item || '_' || v_rownum;
+      v_script :=
+            '<script type="text/javascript">'
+         || '$(document).ready( function() {'
+         || '$("#'
+         || v_item
+         || '").autocomplete(''APEX'', {'
+         || 'apexProcess: '''
+         || p_process
+         || ''','
+         || 'width: '
+         || p_width
+         || ','
+         || 'multiple: false,'
+         || 'matchContains: true,'
+         || 'cacheLength: 1,'
+         || 'max: 100,'
+         || 'delay: 150,'
+         || 'minChars: 1,'
+         || 'matchSubset: false'
+         || '});'
+         || '});'
+         || '</script>';
+      RETURN v_script;
+   END get_autocomplete;

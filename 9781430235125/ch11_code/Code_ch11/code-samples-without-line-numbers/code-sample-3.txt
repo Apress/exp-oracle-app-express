@@ -1,0 +1,23 @@
+ 1 (function($){
+ 2 $.widget("ui.save_value_on_casdade", {
+ 3    initItem: function(apexThis) {
+ 4       var uiw = this;
+ 5       
+ 6       apexThis.affectedElements.each(function() {
+ 7          var $this = $(this);
+ 8          
+ 9          $this
+10             .data('value-saved', $v($this.attr('id')))
+11             .bind('change', function() {
+12                $this.data('value-saved', $v($this.attr('id')));
+13             })
+14             .bind('apexafterrefresh', function() {
+15                uiw._restoreValue($this);
+16             });
+17       });
+18    },
+19    _restoreValue: function($affectedElement) {     
+20       $s($affectedElement.attr('id'), $affectedElement.data('value-saved'));
+21    }
+22 });
+23 })(apex.jQuery);

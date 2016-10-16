@@ -1,0 +1,104 @@
+   PROCEDURE save_emp_custom (p_message OUT VARCHAR2);
+
+   FUNCTION validate_emp_comm
+      RETURN VARCHAR2;
+
+   PROCEDURE save_emp_custom (p_message OUT VARCHAR2)
+   IS
+      v_ins_count   INTEGER := 0;
+      v_upd_count   INTEGER := 0;
+   BEGIN
+      FOR i IN 1 .. apex_application.g_f02.COUNT
+      LOOP
+         BEGIN
+            IF apex_application.g_f02 (i) IS NOT NULL
+            THEN
+               IF apex_application.g_f10 (i) <>
+                     wwv_flow_item.md5 (apex_application.g_f02 (i),
+                                        apex_application.g_f03 (i),
+                                        apex_application.g_f04 (i),
+                                        apex_application.g_f05 (i),
+                                        apex_application.g_f06 (i),
+                                        apex_application.g_f07 (i),
+                                        apex_application.g_f08 (i),
+                                        apex_application.g_f09 (i)
+                                       )
+               THEN
+                  UPDATE emp
+                     SET ename = apex_application.g_f03 (i),
+                         job = apex_application.g_f04 (i),
+                         mgr = apex_application.g_f05 (i),
+                         hiredate = apex_application.g_f06 (i),
+                         sal = apex_application.g_f07 (i),
+                         comm = apex_application.g_f08 (i),
+                         deptno = apex_application.g_f09 (i)
+                   WHERE empno = apex_application.g_f02 (i);
+
+                  v_upd_count := v_upd_count + 1;
+               END IF;
+            ELSE
+               INSERT INTO emp
+                           (ename,
+                            job,
+                            mgr,
+                            hiredate,
+                            sal,
+                            comm,
+                            deptno
+                           )
+                    VALUES (apex_application.g_f03 (i),
+                            apex_application.g_f04 (i),
+                            apex_application.g_f05 (i),
+                            apex_application.g_f06 (i),
+                            apex_application.g_f07 (i),
+                            apex_application.g_f08 (i),
+                            apex_application.g_f09 (i)
+                           );
+
+               v_ins_count := v_ins_count + 1;
+            END IF;
+         EXCEPTION
+            WHEN OTHERS
+            THEN
+               p_message := p_message || SQLERRM;
+         END;
+      END LOOP;
+
+      IF v_ins_count > 0 OR v_upd_count > 0
+      THEN
+         p_message :=
+               p_message
+            || v_ins_count
+            || ' row(s) inserted. '
+            || v_upd_count
+            || ' row(s) updated.';
+      END IF;
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         p_message := SQLERRM;
+   END save_emp_custom;
+
+   FUNCTION validate_emp_comm
+      RETURN VARCHAR2
+   IS
+      v_message   VARCHAR2 (4000);
+   BEGIN
+      FOR i IN 1 .. apex_application.g_f02.COUNT
+      LOOP
+         IF     apex_application.g_f09 (i) <> 30
+            AND apex_application.g_f08 (i) IS NOT NULL
+         THEN
+            v_message :=
+                  v_message
+               || '<br/>'
+               || 'Commission is allowed for the sales department only.'
+               || ' (Row '
+               || i
+               || ')';
+         END IF;
+      END LOOP;
+
+      v_message := LTRIM (v_message, '<br/>');
+      RETURN v_message;
+   END validate_emp_comm;

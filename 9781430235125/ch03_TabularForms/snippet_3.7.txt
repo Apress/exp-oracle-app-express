@@ -1,0 +1,29 @@
+SELECT    apex_item.checkbox (1, '#ROWNUM#') empno,
+          apex_item.hidden (2, empno) 
+       || apex_item.text (3, ename, 20, 20) ename,
+          apex_item.text (4, job, 10, 10) job, 
+          apex_item.text (5, mgr, 5, 5) mgr,
+          apex_item.text (6, hiredate, 12, 12) hiredate,
+          apex_item.text (7, sal, 6, 6) sal, 
+          apex_item.text (8, comm, 6, 6) comm,
+          apex_item.text (9, deptno, 4, 4)
+       || apex_item.hidden (10, checksum) deptno
+  FROM (SELECT NULL empno, NULL ename, NULL job, 
+               NULL mgr, NULL hiredate,
+               NULL sal, NULL comm, NULL deptno, 
+               NULL checksum
+          FROM DUAL
+         WHERE :request IN ('ADD')
+        UNION ALL
+        SELECT empno, ename, job, mgr, hiredate, 
+               sal, comm, deptno,
+               wwv_flow_item.md5 (empno,
+                                  ename,
+                                  job,
+                                  mgr,
+                                  hiredate,
+                                  sal,
+                                  comm,
+                                  deptno
+                                 ) checksum
+          FROM emp)

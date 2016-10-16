@@ -1,0 +1,37 @@
+FUNCTION compare_checksum_table (p_array IN NUMBER)
+  RETURN BOOLEAN;
+
+FUNCTION compare_checksum_table (p_array IN NUMBER)
+      RETURN BOOLEAN
+   IS
+      v_empno          NUMBER;
+      v_emp_checksum   VARCHAR2 (40);
+   BEGIN
+      IF apex_application.g_f02 (p_array) IS NOT NULL
+      THEN
+         v_empno := apex_application.g_f02 (p_array);
+
+         SELECT wwv_flow_item.md5 (empno,
+                                   ename,
+                                   job,
+                                   mgr,
+                                   hiredate,
+                                   sal,
+                                   comm,
+                                   deptno,
+                                   valid
+                                  )
+           INTO v_emp_checksum
+           FROM emp
+          WHERE empno = v_empno;
+
+         IF apex_application.g_fcs (p_array) <> v_emp_checksum
+         THEN
+            RETURN FALSE;
+         ELSE
+            RETURN TRUE;
+         END IF;
+      ELSE
+         RETURN TRUE;
+      END IF;
+END compare_checksum_table;

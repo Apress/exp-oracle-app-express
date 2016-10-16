@@ -1,0 +1,41 @@
+ 1 FUNCTION save_value_render (
+ 2    p_dynamic_action IN APEX_PLUGIN.T_DYNAMIC_ACTION,
+ 3    p_plugin         IN APEX_PLUGIN.T_PLUGIN 
+ 4 )
+ 5 
+ 6    RETURN APEX_PLUGIN.T_DYNAMIC_ACTION_RENDER_RESULT
+ 7    
+ 8 IS
+ 9 
+10    l_result APEX_PLUGIN.T_DYNAMIC_ACTION_RENDER_RESULT;
+11 
+12 BEGIN
+13 
+14    IF apex_application.g_debug
+15    THEN
+16       apex_plugin_util.debug_dynamic_action(
+17          p_plugin         => p_plugin,
+18          p_dynamic_action => p_dynamic_action 
+19       );
+20    END IF;
+21    
+22    apex_javascript.add_library(
+23       p_name      => 'com_pluggen_save_value_on_cascade',
+24       p_directory => p_plugin.file_prefix,
+25       p_version   => NULL 
+26    );
+27       
+28    apex_javascript.add_onload_code(
+29       p_code => 'apex.jQuery(document).save_value_on_casdade({});'
+30    ); 
+31 
+32    l_result.javascript_function := 
+33       'function(){' ||
+34       '   if (this.browserEvent === ''load''){' ||
+35       '      apex.jQuery(document).save_value_on_casdade(''initItem'', this);' ||
+36       '   }' ||
+37       '}';
+38 
+39    RETURN l_result;
+40     
+41 END save_value_render;

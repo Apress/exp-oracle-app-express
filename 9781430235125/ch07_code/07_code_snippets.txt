@@ -1,0 +1,94 @@
+APRESS Expert Oracle Application Express 
+Chapter 7: Dynamic Actions - Code Snippets
+
+
+--- Custom JavaScript vs Dynamic Actions  ---
+
+
+*********************************************
+
+/**
+ * Toggle Empno based on P1_DEPTNO's value  
+ */
+function showHideEmpno(){
+  if ($('#P1_DEPTNO').val().length > 0)
+    $('#P1_EMPNO').closest('tr').show();
+  else
+    $('#P1_EMPNO').closest('tr').hide();
+}//showHideEmpno
+  
+//Wait for page to be ready
+$(document).ready(function() {
+  //Show/Hide Empno after page load
+  showHideEmpno();
+  
+  //Register browser event (onChange)
+  $('#P1_DEPTNO').change(function(){showHideEmpno();});
+});
+
+*********************************************
+
+this.triggeringElement.value > $('#P1_X').val() 
+
+*********************************************
+
+
+--- Dynamic Actions in Action  ---
+
+
+*********************************************
+
+select e.empno, 
+       initcap(e.ename) ename, 
+       initcap(e.job) job, 
+       e.hiredate, 
+       e.sal
+from emp e
+where e.deptno = :p1_deptno
+
+*********************************************
+
+<span data-empno="#EMPNO#" data-ename="#ENAME#">#ENAME#</span> 
+
+*********************************************
+
+/* Note: this code is just referenced in the chapter and is not used in an example
+/* Using the DEPT_EMP_REPORT id ensures that this highlighting will only affect the Department Employees report */
+#DEPT_EMP_REPORT .highlight-row:hover > td {
+  background-color: yellow;
+} 
+
+*********************************************
+
+//This code will prepent the affected element(s) with the inline CSS HTML code.
+$(this.affectedElements).prepend(
+  '<style type="text/css"><!-- #DEPT_EMP_REPORT .highlight-row:hover > td {background-color: yellow;}//--></style>'
+);
+
+*********************************************
+
+$(this.browserEvent.target).closest('tr .highlight-row',this.browserEvent.currentTarget).length > 0
+
+*********************************************
+
+//dataSpan will represent the span tag that was created earlier that contains the custom data attributes
+var dataSpan = $(this.browserEvent.target).closest('tr').find('[data-empno]');
+
+//Set the EMPNO and its display values using the data attributes
+$('#P1_EMPNO').val(dataSpan.attr('data-empno'));
+$('#P1_EMPNO_DISPLAY').html(dataSpan.attr('data-ename'));
+
+*********************************************
+
+$(this.affectedElements).fadeIn(2000, function(){
+  //The second parameter in the fadeIn function allows you to define a
+  //function to be run once the fadeIn is completed.
+  //This function  will be used to remove the bold style 
+  $(this).css('font-weight ' ,'');
+});
+
+*********************************************
+
+$('#P1_EMPNO_DISPLAY').html(dataSpan.attr('data-ename')).trigger('change');
+
+*********************************************

@@ -1,0 +1,35 @@
+SELECT empno, NULL clone, empno empno_display, ename, job, mgr,  
+       hiredate, sal, comm, deptno, valid
+  FROM emp
+
+
+HTML Expression of the Clone Row:
+
+<a href="#" onclick="javascript:fn_CloneRow(this);">
+<img src="#IMAGE_PREFIX#copy.gif" alt=""></a>
+
+
+<script type="text/javascript">
+function fn_delete(pThis)
+{
+   var l_tr=$x_UpTill(pThis,'TR');
+   l_tr.parentNode.removeChild(l_tr);
+}
+
+function fn_CloneRow(pThis) {
+$(pThis).parent().parent().clone(true,false).insertAfter($(pThis).parent().parent());
+
+	newRow = $(pThis).parent().parent().next();
+	newRow.find('[type=hidden]').val('');
+	newRow.find('[name=fcs]').val('Z');
+	newRow.find('[type=checkbox]').remove();
+	html_RowHighlight($(newRow).get(0),"#9E0200");
+
+	// Delete Cloned Row
+	newLink = $(newRow).find('img')[0];
+	newLink.src = '/i/del.gif';
+	$(newLink).parent().removeAttr('onclick');
+	$(newLink).parent().get(0).onclick = function() {
+	fn_delete(this)};
+}
+</script>

@@ -1,0 +1,31 @@
+<?xml version = "1.0" encoding="utf-8" standalone = "yes"?>
+<anygantt>
+  <settings>
+    <background enabled="false" />
+    <navigation enabled="true" position="Top" size="30">
+      <buttons collapse_expand_button="false" align="Far"/>
+      <text>Project Gantt</text>
+    </navigation>
+  </settings>
+  <datagrid enabled="true" width="400" />
+  <styles>
+    <task_styles>
+      <task_style name="defaultStyle">
+        <actual>
+          <bar_style>
+            <middle>
+              <fill enabled="true" type="Gradient">
+                <gradient angle="-90">
+                  <key color="#689663" position="0"/>
+                  <key color="#6B9866" position="0.38"/>
+                  <key color="#B4FFAB" position="1"/>
+                </gradient>
+              </fill> 
+            </middle>
+          </bar_style>
+        </actual>
+      </task_style>
+    </task_styles>
+  </styles>
+&P3_XML_PG.
+</anygantt>

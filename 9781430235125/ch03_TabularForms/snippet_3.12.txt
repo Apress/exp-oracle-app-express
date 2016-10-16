@@ -1,0 +1,22 @@
+<script language="JavaScript" type="text/javascript">
+ function LPad(ContentToSize,PadLength,PadChar)
+  {
+     var PaddedString=ContentToSize.toString();
+     for(i=ContentToSize.length+1;i<=PadLength;i++)
+     {PaddedString=PadChar+PaddedString;}
+     return PaddedString;
+  }
+
+ function f_update_emp_coll_member(pThis,pRownum,pAttribNo){ 
+    var v_seq_array = 'f02_' + LPad(pRownum, 4, "0");
+    var SeqID =  $x(v_seq_array).value;
+    var get = new htmldb_Get(null,$x('pFlowId').value,
+              'APPLICATION_PROCESS=update_emp_coll_member',0);
+    get.add('T_COL_VAL_ITEM',pThis);
+    get.add('T_COL_SEQ_ITEM',SeqID);
+    get.add('T_COL_ATTR_ITEM',pAttribNo);
+    gReturn = get.get();
+    if(gReturn) {alert(gReturn)}
+    get = null;
+ }
+</script>

@@ -1,0 +1,13 @@
+SELECT empno,
+          empno
+       || tab_form_emp_pkg.get_autocomplete ('f04', '#ROWNUM#', 85, 'get_job') empno_display,
+       ename, job,
+       tab_form_emp_pkg.get_autocomplete_key
+                        (tab_form_emp_pkg.get_manager_for_id (mgr),
+                         'f05',
+                         '#ROWNUM#',
+                         85,
+                         'get_manager'
+                        ) mgr_search,
+       mgr, hiredate, sal, comm, deptno, valid
+  FROM emp

@@ -1,0 +1,159 @@
+  1 FUNCTION calendar_render (
+  2    p_region              IN APEX_PLUGIN.T_REGION,
+  3    p_plugin              IN APEX_PLUGIN.T_PLUGIN,
+  4    p_is_printer_friendly IN BOOLEAN
+  5 )
+  6 
+  7    RETURN APEX_PLUGIN.T_REGION_RENDER_RESULT
+  8    
+  9 IS
+ 10 
+ 11    l_retval         APEX_PLUGIN.T_REGION_RENDER_RESULT;
+ 12    l_onload_code    VARCHAR2(4000);
+ 13    l_jqueryui_theme VARCHAR2(30) := p_plugin.attribute_01;
+ 14    l_crlf           CHAR(2) := CHR(13)||CHR(10);
+ 15    
+ 16 BEGIN
+ 17 
+ 18    IF apex_application.g_debug 
+ 19    THEN
+ 20       apex_plugin_util.debug_region (
+ 21          p_plugin => p_plugin,
+ 22          p_region => p_region
+ 23       );
+ 24    END IF;
+ 25 
+ 26    sys.htp.p(
+ 27       '<div id="' || p_region.static_id || '_FULL_CALENDAR"></div>'
+ 28    );
+ 29 
+ 30    apex_javascript.add_library(
+ 31       p_name      => 'com_pluggen_calendar',
+ 32       p_directory => p_plugin.file_prefix,
+ 33       p_version   => NULL
+ 34    );
+ 35 
+ 36    apex_javascript.add_library (
+ 37       p_name      => 'jquery.ui.button.min',
+ 38       p_directory => apex_application.g_image_prefix || 'libraries/jquery-ui/1.8/ui/minified/',
+ 39       p_version   => NULL
+ 40    );
+ 41 
+ 42    apex_javascript.add_library (
+ 43       p_name      => 'fullcalendar.min',
+ 44       p_directory => p_plugin.file_prefix,
+ 45       p_version   => NULL
+ 46    );
+ 47    
+ 48    IF l_jqueryui_theme IS NOT NULL
+ 49    THEN
+ 50       apex_css.add_file(
+ 51          p_name      => 'jquery-ui',
+ 52          p_directory => apex_application.g_image_prefix || 'libraries/jquery-ui/1.8/themes/' || l_jqueryui_theme || '/',
+ 53          p_version   => NULL
+ 54       );
+ 55    END IF;
+ 56    
+ 57    apex_css.add_file(
+ 58       p_name      => 'fullcalendar',
+ 59       p_directory => p_plugin.file_prefix,
+ 60       p_version   => NULL
+ 61    );
+ 62 
+ 63    l_onload_code := 'apex.jQuery("div#' || p_region.static_id || '").calendar({' || l_crlf
+ 64       || '   ' || apex_javascript.add_attribute('theme', l_jqueryui_theme, TRUE, TRUE) || l_crlf
+ 65       || '   ' || apex_javascript.add_attribute('ajaxIdentifier', apex_plugin.get_ajax_identifier(), FALSE, FALSE) || l_crlf
+ 66       || '});';
+ 67       
+ 68    apex_javascript.add_onload_code (
+ 69       p_code => l_onload_code
+ 70    );
+ 71         
+ 72    RETURN l_retval;
+ 73     
+ 74 END calendar_render;
+ 75 
+ 76 FUNCTION calendar_ajax (
+ 77    p_region IN APEX_PLUGIN.T_REGION,
+ 78    p_plugin IN APEX_PLUGIN.T_PLUGIN
+ 79 )
+ 80 
+ 81    RETURN APEX_PLUGIN.T_REGION_AJAX_RESULT
+ 82 
+ 83 IS
+ 84 
+ 85    l_retval            APEX_PLUGIN.T_REGION_AJAX_RESULT;
+ 86    l_column_value_list APEX_PLUGIN_UTIL.T_COLUMN_VALUE_LIST;  
+ 87    l_start_date_item   VARCHAR2(32767) := p_region.attribute_01;
+ 88    l_end_date_item     VARCHAR2(32767) := p_region.attribute_02;
+ 89    l_window_start      DATE;
+ 90    l_window_end        DATE;
+ 91    l_id                PLS_INTEGER;
+ 92    l_title             VARCHAR2(32767);
+ 93    l_all_day           BOOLEAN;
+ 94    l_start             VARCHAR2(50);
+ 95    l_end               VARCHAR2(50);
+ 96    l_url               VARCHAR2(32767);
+ 97    l_class_name        VARCHAR2(100);
+ 98   
+ 99 BEGIN
+100    
+101    IF l_start_date_item IS NOT NULL
+102    THEN
+103       l_window_start := TO_DATE(apex_application.g_x01, 'YYYYMMDD');
+104       apex_util.set_session_state(l_start_date_item, l_window_start);
+105    END IF;
+106    
+107    IF l_end_date_item IS NOT NULL
+108    THEN
+109       l_window_end := TO_DATE(apex_application.g_x02, 'YYYYMMDD');
+110       apex_util.set_session_state(l_end_date_item, l_window_end);
+111    END IF;
+112 
+113    l_column_value_list := apex_plugin_util.get_data(
+114       p_sql_statement  => p_region.source, 
+115       p_min_columns    => 7, 
+116       p_max_columns    => 7, 
+117       p_component_name => p_region.name
+118    );   
+119 
+120    apex_plugin_util.print_json_http_header;
+121    
+122    sys.htp.p('[');
+123    
+124    FOR x IN 1 .. l_column_value_list(1).count
+125    LOOP
+126       l_id := sys.htf.escape_sc(l_column_value_list(1)(x));
+127       l_title := sys.htf.escape_sc(l_column_value_list(2)(x));
+128       l_all_day :=
+129          CASE
+130             WHEN UPPER(sys.htf.escape_sc(l_column_value_list(3)(x))) = 'TRUE'
+131             THEN TRUE
+132             ELSE FALSE
+133          END;
+134       l_start := sys.htf.escape_sc(l_column_value_list(4)(x));
+135       l_end := sys.htf.escape_sc(l_column_value_list(5)(x));
+136       l_url := sys.htf.escape_sc(l_column_value_list(6)(x));
+137       l_class_name := sys.htf.escape_sc(l_column_value_list(7)(x));
+138       
+139       sys.htp.p(
+140             CASE
+141                WHEN x > 1 THEN ',' 
+142             END 
+143          || '{'
+144          || apex_javascript.add_attribute('id', l_id, TRUE, TRUE)
+145          || apex_javascript.add_attribute('allDay', l_all_day, TRUE, TRUE)
+146          || apex_javascript.add_attribute('end', l_end, TRUE, TRUE)
+147          || apex_javascript.add_attribute('url', l_url, TRUE, TRUE)
+148          || apex_javascript.add_attribute('className', l_class_name, TRUE, TRUE)
+149          || apex_javascript.add_attribute('title', l_title, FALSE, TRUE)
+150          || apex_javascript.add_attribute('start', l_start, FALSE, FALSE)
+151          || '}'
+152       );
+153    END LOOP;
+154    
+155    sys.htp.p(']');
+156 
+157    RETURN l_retval;
+158 
+159 END calendar_ajax;

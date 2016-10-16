@@ -1,0 +1,40 @@
+   PROCEDURE update_emp_coll_member (
+      p_seq_id             IN       NUMBER,
+      p_attribute_number   IN       NUMBER,
+      p_attribute_value    IN       VARCHAR2
+   );
+
+   PROCEDURE update_emp_coll_member (
+      p_seq_id             IN   NUMBER,
+      p_attribute_number   IN   NUMBER,
+      p_attribute_value    IN   VARCHAR2
+   )
+   IS
+      v_collection   VARCHAR2 (40)   := 'EMP_DEPT';
+      v_number       NUMBER;
+      v_date         DATE;
+      v_message      VARCHAR2 (4000);
+   BEGIN
+      IF p_seq_id IS NOT NULL
+      THEN
+         IF p_attribute_number IN (4, 6, 7, 8)
+         THEN
+            v_number := TO_NUMBER (p_attribute_value);
+         ELSIF p_attribute_number IN (5)
+         THEN
+            v_date := TO_DATE (p_attribute_value);
+         END IF;
+
+         apex_collection.update_member_attribute
+             (p_collection_name      => v_collection,
+              p_seq                  => p_seq_id,
+              p_attr_number          => p_attribute_number,
+              p_attr_value           => p_attribute_value
+                                         );
+      END IF;
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         v_message := SQLERRM;
+         HTP.p (v_message);
+   END update_emp_coll_member;

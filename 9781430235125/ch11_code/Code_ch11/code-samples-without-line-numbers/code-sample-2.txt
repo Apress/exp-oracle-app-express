@@ -1,0 +1,41 @@
+FUNCTION save_value_render (
+   p_dynamic_action IN APEX_PLUGIN.T_DYNAMIC_ACTION,
+   p_plugin         IN APEX_PLUGIN.T_PLUGIN 
+)
+
+   RETURN APEX_PLUGIN.T_DYNAMIC_ACTION_RENDER_RESULT
+   
+IS
+
+   l_result APEX_PLUGIN.T_DYNAMIC_ACTION_RENDER_RESULT;
+
+BEGIN
+
+   IF apex_application.g_debug
+   THEN
+      apex_plugin_util.debug_dynamic_action(
+         p_plugin         => p_plugin,
+         p_dynamic_action => p_dynamic_action 
+      );
+   END IF;
+   
+   apex_javascript.add_library(
+      p_name      => 'com_pluggen_save_value_on_cascade',
+      p_directory => p_plugin.file_prefix,
+      p_version   => NULL 
+   );
+      
+   apex_javascript.add_onload_code(
+      p_code => 'apex.jQuery(document).save_value_on_casdade();'
+   ); 
+
+   l_result.javascript_function := 
+      'function(){' ||
+      '   if (this.browserEvent === ''load''){' ||
+      '      apex.jQuery(document).save_value_on_casdade(''initItem'', this);' ||
+      '   }' ||
+      '}';
+
+   RETURN l_result;
+    
+END save_value_render;

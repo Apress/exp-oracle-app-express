@@ -1,0 +1,129 @@
+   FUNCTION validate_collection_data
+      RETURN VARCHAR2;
+
+   PROCEDURE update_table_from_collection (
+      p_deptno    IN       NUMBER,
+      p_message   OUT      VARCHAR2
+   );
+
+
+   FUNCTION validate_collection_data
+      RETURN VARCHAR2
+   IS
+      v_message    VARCHAR2 (4000);
+      v_checksum   VARCHAR2 (400);
+   BEGIN
+      FOR c IN (SELECT empno, ename, job, mgr, hiredate, sal, comm, deptno,
+                       valid, checksum, delete_flag
+                  FROM emp_coll_v
+                 WHERE checksum IS NOT NULL)
+      LOOP
+         SELECT wwv_flow_item.md5 (empno,
+                                   ename,
+                                   job,
+                                   mgr,
+                                   hiredate,
+                                   sal,
+                                   comm,
+                                   deptno,
+                                   valid
+                                  )
+           INTO v_checksum
+           FROM emp
+          WHERE empno = c.empno;
+
+         IF c.checksum <> v_checksum
+         THEN
+            v_message :=
+                  v_message
+               || '<br/>'
+               || 'Empno: '
+               || c.empno
+               || ': Snapshot too old.';
+         END IF;
+      END LOOP;
+
+      v_message := LTRIM (v_message, '<br/>');
+      RETURN v_message;
+   END validate_collection_data;
+
+   PROCEDURE update_table_from_collection (
+      p_deptno    IN       NUMBER,
+      p_message   OUT      VARCHAR2
+   )
+   IS
+      v_ins_count   INTEGER         := 0;
+      v_upd_count   INTEGER         := 0;
+      v_del_count   INTEGER         := 0;
+      v_message     VARCHAR2 (4000);
+   BEGIN
+      FOR c IN (SELECT empno, ename, job, mgr, hiredate, sal, comm, deptno,
+                       valid, checksum, delete_flag
+                  FROM emp_coll_v)
+      LOOP
+         IF c.delete_flag IS NULL AND c.checksum IS NOT NULL
+         THEN
+            IF c.checksum <>
+                  wwv_flow_item.md5 (c.empno,
+                                     c.ename,
+                                     c.job,
+                                     c.mgr,
+                                     c.hiredate,
+                                     c.sal,
+                                     c.comm,
+                                     c.deptno,
+                                     c.valid
+                                    )
+            THEN
+               UPDATE emp
+                  SET ename = c.ename,
+                      job = c.job,
+                      mgr = c.mgr,
+                      hiredate = c.hiredate,
+                      sal = c.sal,
+                      comm = c.comm,
+                      deptno = c.deptno
+                WHERE empno = c.empno;
+
+               v_upd_count := v_upd_count + 1;
+            END IF;
+         ELSIF c.delete_flag IS NULL AND c.checksum IS NULL
+         THEN
+            INSERT INTO emp
+                        (empno, ename, job, mgr, hiredate, sal,
+                         comm, deptno, valid
+                        )
+                 VALUES (c.empno, c.ename, c.job, c.mgr, c.hiredate, c.sal,
+                         c.comm, c.deptno, c.valid
+                        );
+
+            v_ins_count := v_ins_count + 1;
+         ELSIF c.delete_flag IS NOT NULL AND c.checksum IS NOT NULL
+         THEN
+            DELETE FROM emp
+                  WHERE empno = c.empno;
+
+            v_ins_count := v_ins_count + 1;
+         END IF;
+      END LOOP;
+
+      p_message :=
+            p_message
+         || '<br/>'
+         || v_ins_count
+         || ' row(s) inserted. '
+         || v_upd_count
+         || ' row(s) updated.'
+         || v_del_count
+         || ' row(s) deleted.';
+
+      create_emp_collection (p_deptno, v_message);
+      p_message :=
+            p_message
+         || '<br/>' || v_message;
+      p_message := LTRIM (p_message, '<br/>');
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         p_message := SQLERRM;
+   END update_table_from_collection;

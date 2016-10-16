@@ -1,0 +1,29 @@
+FUNCTION compare_checksum_change (p_array IN NUMBER)
+ RETURN BOOLEAN;
+
+FUNCTION compare_checksum_change (p_array IN NUMBER)
+      RETURN BOOLEAN
+   IS
+   BEGIN
+      IF apex_application.g_f02 (p_array) IS NOT NULL
+      THEN
+         IF apex_application.g_fcs (p_array) <>
+          wwv_flow_item.md5 (apex_application.g_f02 (p_array),
+                             apex_application.g_f03 (p_array),
+                             apex_application.g_f04 (p_array),
+                             apex_application.g_f05 (p_array),
+                             apex_application.g_f06 (p_array),
+                             apex_application.g_f07 (p_array),
+                             apex_application.g_f08 (p_array),
+                             apex_application.g_f09 (p_array),
+                             apex_application.g_f11 (p_array)
+                             )
+         THEN
+            RETURN FALSE;
+         ELSE
+            RETURN TRUE;
+         END IF;
+      ELSE
+         RETURN TRUE;
+      END IF;
+END compare_checksum_change;

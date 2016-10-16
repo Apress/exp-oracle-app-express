@@ -1,0 +1,9 @@
+BEGIN
+   FOR i IN 1 .. apex_application.g_f01.COUNT
+   LOOP
+      DELETE FROM emp
+            WHERE empno = apex_application.g_f02 (i);
+          -- g_f02 is the hidden column containing
+          -- the primary key of the EMP table (empno)
+   END LOOP;
+END; 

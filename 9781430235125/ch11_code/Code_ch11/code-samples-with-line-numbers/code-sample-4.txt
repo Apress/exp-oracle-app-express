@@ -1,0 +1,89 @@
+ 1 FUNCTION password_render (
+ 2    p_item                IN APEX_PLUGIN.T_PAGE_ITEM,
+ 3    p_plugin              IN APEX_PLUGIN.T_PLUGIN,
+ 4    p_value               IN VARCHAR2,
+ 5    p_is_readonly         IN BOOLEAN,
+ 6    p_is_printer_friendly IN BOOLEAN 
+ 7 )
+ 8 
+ 9    RETURN APEX_PLUGIN.T_PAGE_ITEM_RENDER_RESULT
+10    
+11 IS
+12 
+13    l_retval             APEX_PLUGIN.T_PAGE_ITEM_RENDER_RESULT;
+14    l_name               VARCHAR2(30);
+15    l_submit_on_enter    VARCHAR2(1) := NVL(p_item.attribute_01, 'Y');
+16    l_message_icon       VARCHAR2(20) := NVL(p_item.attribute_02, 'ui-icon-alert');
+17    l_message_text       VARCHAR2(500) := NVL(p_item.attribute_03, 'Caps Lock is enabled.');
+18    l_message_width      PLS_INTEGER := NVL(p_item.attribute_04, 150);
+19    l_message_alignment  VARCHAR2(20) := NVL(p_item.attribute_05, 'center bottom');
+20    l_password_alignment VARCHAR2(20) := NVL(p_item.attribute_06, 'center top');
+21    l_offset             VARCHAR2(20) := NVL(p_item.attribute_07, '0');
+22    l_jqueryui_theme     VARCHAR2(30) := p_plugin.attribute_01;
+23    l_onload_code        VARCHAR2(32767);
+24    l_crlf               CHAR(2) := CHR(13)||CHR(10);
+25    
+26 BEGIN
+27 
+28    IF apex_application.g_debug
+29    THEN
+30       apex_plugin_util.debug_page_item (
+31          p_plugin              => p_plugin,
+32          p_page_item           => p_item,
+33          p_value               => p_value,
+34          p_is_readonly         => p_is_readonly,
+35          p_is_printer_friendly => p_is_printer_friendly
+36       );
+37    END IF;
+38 
+39    l_name := apex_plugin.get_input_name_for_page_item(FALSE);
+40 
+41    IF p_is_readonly OR p_is_printer_friendly
+42    THEN
+43       NULL;--Password should not be displayed
+44    ELSE
+45       sys.htp.p(
+46             '<input type="password" name="' || l_name || '" id="' || p_item.name || 
+47          || '" size="' || p_item.element_width || '" maxlength="' || p_item.element_max_length 
+48          || '" ' || p_item.element_attributes || ' '
+49          || CASE
+50                WHEN l_submit_on_enter = 'Y'
+51                THEN 'onkeypress="return submitEnter(this,event)"'
+52             END
+53          || '/>'
+54       );
+55 
+56       apex_javascript.add_library(
+57          p_name      => 'com_pluggen_password',
+58          p_directory => p_plugin.file_prefix,
+59          p_version   => NULL
+60       );
+61 
+62       l_onload_code := 'apex.jQuery("input#' || p_item.name || '").sbip_password({' || l_crlf
+63          || '   ' || apex_javascript.add_attribute('warningMsgIcon', l_message_icon) || l_crlf
+64          || '   ' || apex_javascript.add_attribute('warningMsgText', l_message_text) || l_crlf
+65          || '   ' || apex_javascript.add_attribute('warningMsgWidth', l_message_width) || l_crlf
+66          || '   ' || apex_javascript.add_attribute('warningMsgAlignment', l_message_alignment) || l_crlf
+67          || '   ' || apex_javascript.add_attribute('passwordAlignment', l_password_alignment) || l_crlf
+68          || '   ' || apex_javascript.add_attribute('offset', l_offset, TRUE, FALSE) || l_crlf
+69          || '});';
+70          
+71       apex_javascript.add_onload_code(
+72          p_code => l_onload_code
+73       ); 
+74       
+75       IF l_jqueryui_theme IS NOT NULL
+76       THEN
+77          apex_css.add_file(
+78             p_name      => 'jquery-ui',
+79             p_directory => apex_application.g_image_prefix || 'libraries/jquery-ui/1.8/themes/' || l_jqueryui_theme || '/',
+80             p_version   => NULL
+81          );
+82       END IF;
+83 
+84       l_retval.is_navigable := TRUE;
+85    END IF;
+86         
+87    RETURN l_retval;
+88     
+89 END password_render;

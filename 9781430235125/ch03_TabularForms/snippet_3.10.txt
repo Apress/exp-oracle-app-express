@@ -1,0 +1,103 @@
+   PROCEDURE save_emp_coll_custom (p_message OUT VARCHAR2);
+
+   PROCEDURE delete_emp_coll_custom (p_message OUT VARCHAR2);
+
+   PROCEDURE save_emp_coll_custom (p_message OUT VARCHAR2)
+   IS
+      v_ins_count    INTEGER       := 0;
+      v_upd_count    INTEGER       := 0;
+      v_collection   VARCHAR2 (40) := 'EMP_DEPT';
+   BEGIN
+      FOR i IN 1 .. apex_application.g_f02.COUNT
+      LOOP
+         BEGIN
+            IF apex_application.g_f02 (i) IS NOT NULL
+            THEN
+               IF apex_application.g_f12 (i) <>
+                     wwv_flow_item.md5 (apex_application.g_f03 (i),
+                                        apex_application.g_f04 (i),
+                                        apex_application.g_f05 (i),
+                                        apex_application.g_f06 (i),
+                                        apex_application.g_f07 (i),
+                                        apex_application.g_f08 (i),
+                                        apex_application.g_f09 (i),
+                                        apex_application.g_f10 (i),
+                                        apex_application.g_f11 (i)
+                                       )
+      THEN
+      apex_collection.update_member
+      (p_collection_name  => v_collection,
+       p_seq              => apex_application.g_f02(i),
+       p_c001             => apex_application.g_f03(i),
+       p_c002             => apex_application.g_f04(i),
+       p_c003             => apex_application.g_f05(i),
+       p_c004             => TO_NUMBER(apex_application.g_f06(i)),
+       p_c005             => TO_DATE(apex_application.g_f07(i)),
+       p_c006             => TO_NUMBER(apex_application.g_f08(i)),
+       p_c007             => TO_NUMBER(apex_application.g_f09(i)),
+       p_c008             => TO_NUMBER(apex_application.g_f10(i)),
+       p_c009             => apex_application.g_f11(i),
+       p_c010             => apex_application.g_f12(i),
+       p_c011             => apex_application.g_f13(i));
+                  v_upd_count := v_upd_count + 1;
+               END IF;
+      ELSE
+      apex_collection.add_member
+      (p_collection_name  => v_collection,
+       p_c001             => emp_seq.NEXTVAL,
+       p_c002             => apex_application.g_f04(i),
+       p_c003             => apex_application.g_f05(i),
+       p_c004             => TO_NUMBER(apex_application.g_f06(i)),
+       p_c005             => TO_DATE(apex_application.g_f07(i)),
+       p_c006             => TO_NUMBER(apex_application.g_f08(i)),
+       p_c007             => TO_NUMBER(apex_application.g_f09(i)),
+       p_c008             => TO_NUMBER(apex_application.g_f10(i)),
+       p_c009             => apex_application.g_f11(i)
+                                        );
+               v_ins_count := v_ins_count + 1;
+            END IF;
+         EXCEPTION
+            WHEN OTHERS
+            THEN
+               p_message :=    p_message 
+                            || '<br/>'
+                            || 'Row: '
+                            || i
+                            || ' > '
+                            || SQLERRM;
+               p_message := LTRIM (p_message, '<br/>');
+         END;
+      END LOOP;
+
+      IF v_ins_count > 0 OR v_upd_count > 0
+      THEN
+         p_message :=
+               p_message || '<br/>'
+            || v_ins_count
+            || ' row(s) inserted. '
+            || v_upd_count
+            || ' row(s) updated.';
+      END IF;
+               p_message := LTRIM (p_message, '<br/>');
+   EXCEPTION
+      WHEN OTHERS
+      THEN p_message := SQLERRM;
+   END save_emp_coll_custom;
+
+   PROCEDURE delete_emp_coll_custom (p_message OUT VARCHAR2)
+   IS
+      v_row          INTEGER;
+      v_count        INTEGER       := 0;
+      v_collection   VARCHAR2 (40) := 'EMP_DEPT';
+   BEGIN
+      FOR i IN 1 .. apex_application.g_f01.COUNT
+      LOOP
+         v_row := apex_application.g_f01 (i);
+         apex_collection.update_member
+          (p_collection_name      => v_collection,
+           p_seq                  => apex_application.g_f02(v_row),
+           p_c011                 => 'Y');
+         v_count := v_count + 1;
+      END LOOP;
+      p_message := v_count || ' row(s) deleted.';
+   END delete_emp_coll_custom;

@@ -1,0 +1,86 @@
+FUNCTION geocode_execution (
+   p_process IN APEX_PLUGIN.T_PROCESS,
+   p_plugin  IN APEX_PLUGIN.T_PLUGIN 
+)
+
+   RETURN APEX_PLUGIN.T_PROCESS_EXEC_RESULT
+
+IS
+
+   l_retval           APEX_PLUGIN.T_PROCESS_EXEC_RESULT;
+   l_yahoo_appid      VARCHAR2(500) := p_plugin.attribute_01;
+   l_address_item     VARCHAR2(100) := p_process.attribute_01;
+   l_lat_item         VARCHAR2(100) := p_process.attribute_02;
+   l_long_item        VARCHAR2(100) := p_process.attribute_03;
+   l_address_item_val VARCHAR2(32767);
+   l_rest_result      XMLTYPE;
+   l_parm_name_list   WWV_FLOW_GLOBAL.VC_ARR2;
+   l_parm_value_list  WWV_FLOW_GLOBAL.VC_ARR2;
+   l_error            VARCHAR2(32767);
+   l_found_count      PLS_INTEGER;
+   
+   PROCEDURE clear_lat_long
+   IS
+   BEGIN
+      apex_util.set_session_state(l_lat_item, '');
+      apex_util.set_session_state(l_long_item, '');
+   END;
+   
+BEGIN
+
+   IF apex_application.g_debug 
+   THEN
+      apex_plugin_util.debug_process(
+         p_plugin  => p_plugin,
+         p_process => p_process
+      );
+   END IF;
+   
+   l_address_item_val := v(l_address_item);
+   
+   IF l_address_item_val IS NULL
+   THEN
+      clear_lat_long;
+   ELSE
+      l_parm_name_list(1) := 'appid';
+      l_parm_value_list(1) := l_yahoo_appid;
+      l_parm_name_list(2) := 'flags';
+      l_parm_value_list(2) := 'C'; --Only return coordinate data and match quality elements
+      l_parm_name_list(3) := 'location';
+      l_parm_value_list(3) := REPLACE(REPLACE(l_address_item_val, CHR(13)||CHR(10), ' '), CHR(10), ' ');
+
+      l_rest_result := xmltype(
+         apex_web_service.make_rest_request(
+            p_url         => 'http://where.yahooapis.com/geocode',
+            p_http_method => 'GET', 
+            p_parm_name   => l_parm_name_list,
+            p_parm_value  => l_parm_value_list
+         )
+      );
+      
+      IF l_rest_result.extract('//Error/text()').getnumberval() = 0
+      THEN
+         l_found_count := l_rest_result.extract('//Found/text()').getnumberval();
+         
+         IF l_found_count = 1
+         THEN
+            IF l_rest_result.extract('//Result/quality/text()').getstringval() >= 87 --Address match with street match (or better) 
+            THEN
+               apex_util.set_session_state(l_lat_item, l_rest_result.extract('//Result/latitude/text()').getstringval());
+               apex_util.set_session_state(l_long_item, l_rest_result.extract('//Result/longitude/text()').getstringval());
+            ELSE
+               clear_lat_long;
+            END IF;
+         ELSE
+            clear_lat_long;
+         END IF;
+      ELSE
+         l_error := l_rest_result.extract('//ErrorMessage/text()').getstringval();
+         
+         RAISE_APPLICATION_ERROR(-20001, 'Yahoo error: ' || l_error);
+      END IF;
+   END IF;
+   
+   RETURN l_retval;
+
+END geocode_execution;

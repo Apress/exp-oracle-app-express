@@ -1,0 +1,30 @@
+<script type="text/javascript">
+$(function(){
+  if ( $v('pFlowStepId')=='4000') { 
+  // Create Image + Link to Team Development Enhancement on this page"
+  $('.apex-list-horizontal')
+  .append(' 									
+    <div class="noncurrent">							
+      <div class="image">							
+        <a title  = "Team Development Enhancement" 			
+           href   = "f?p=TDE:HOME" 						
+           target = "_blank" >						
+          <img width  ="128" 						
+               height ="128" 						
+               alt    ="Team Development Enhancement" 			
+               title  ="Team Development Enhancement" 			
+               src    ="/i/apex/builder/apex_sample_app_128.png"> 	
+        </a>									
+      </div>									
+      <div class="label">							
+        <a title="Team Development Enhancement" 				
+           href="f?p=TDE:HOME" 						
+           target="_blank" >							
+          Team Development Enhancement					
+        </a>									
+      </div>									
+    </div>									
+  ');
+  }
+});
+</script>
